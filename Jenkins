@@ -1,0 +1,20 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git 'https://github.com/JeevanKumar1019/jenkins.git'
+            }
+        }
+
+        stage('Deploy to Web Server') {
+            steps {
+                script {
+                    sh 'sudo cp -r * /var/www/html/'
+                }
+            }
+        }
+    }
+}
+
