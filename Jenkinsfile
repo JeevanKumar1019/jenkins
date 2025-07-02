@@ -1,14 +1,10 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs "NodeJS 18"
-    }
-
     stages {
         stage('Clone') {
             steps {
-                git 'https://github.com/yourusername/node-ci-sample.git'
+                git 'https://github.com/JeevanKumar1019/jenkins.git'
             }
         }
 
