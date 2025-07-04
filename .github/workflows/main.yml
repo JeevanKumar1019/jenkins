@@ -1,0 +1,43 @@
+name: Install Docker on EC2
+
+on:
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  install-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install Docker on EC2 via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ HOSTNAME }}
+        username: ${{ USER }}
+        key: ${{ SSHKEY }}
+        script: |
+          echo "Updating system..."
+          sudo apt update -y
+
+          echo "Installing required packages..."
+          sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+
+          echo "Adding Docker GPG key..."
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+          echo "Adding Docker repository..."
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+          echo "Installing Docker..."
+          sudo apt update -y
+          sudo apt install -y docker-ce
+
+          echo "Adding $USER to docker group..."
+          sudo usermod -aG docker $USER
+
+          echo "Docker version:"
+          docker --version
+
+          echo "Docker installed successfully!"
