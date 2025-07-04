@@ -1,7 +1,7 @@
 name: Launch EC2 Instance
 
 on:
-  workflow_dispatch:  # Trigger manually
+  workflow_dispatch:  # Manual trigger from GitHub UI
 
 jobs:
   launch-ec2:
@@ -11,30 +11,34 @@ jobs:
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ AWS_REGION }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
     - name: Launch EC2 Instance
       run: |
         echo "Launching EC2 instance..."
 
         INSTANCE_ID=$(aws ec2 run-instances \
-          --image-id ami-0c55b159cbfafe1f0 \ # Ubuntu 22.04 in ap-south-1 (replace as needed)
+          --image-id ami-0c55b159cbfafe1f0 \  # Ubuntu 22.04 (ap-south-1) — change for other regions
           --count 1 \
           --instance-type t2.micro \
-          --key-name my-key-pair \ # Replace with your key pair
+          --key-name my-key-pair \  # Replace with your actual EC2 key pair name
           --security-groups default \
           --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=GitHubActionsEC2}]' \
           --query 'Instances[0].InstanceId' \
           --output text)
 
-        echo "EC2 instance created: $INSTANCE_ID"
+        echo "EC2_INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+        echo "✅ EC2 instance created with ID: $INSTANCE_ID"
 
-    - name: Get Public IP
+    - name: Get EC2 Public IP
       run: |
+        echo "Getting public IP..."
         PUBLIC_IP=$(aws ec2 describe-instances \
-          --filters "Name=tag:Name,Values=GitHubActionsEC2" \
-          --query "Reservations[*].Instances[*].PublicIpAddress" \
+          --instance-ids ${{ env.EC2_INSTANCE_ID }} \
+          --query "Reservations[0].Instances[0].PublicIpAddress" \
           --output text)
-        echo "Public IP: $PUBLIC_IP"
+
+        echo "EC2_PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+        echo "✅ EC2 Public IP: $PUBLIC_IP"
