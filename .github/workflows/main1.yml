@@ -1,0 +1,40 @@
+name: Launch EC2 Instance
+
+on:
+  workflow_dispatch:  # Trigger manually
+
+jobs:
+  launch-ec2:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Launch EC2 Instance
+      run: |
+        echo "Launching EC2 instance..."
+
+        INSTANCE_ID=$(aws ec2 run-instances \
+          --image-id ami-0c55b159cbfafe1f0 \ # Ubuntu 22.04 in ap-south-1 (replace as needed)
+          --count 1 \
+          --instance-type t2.micro \
+          --key-name my-key-pair \ # Replace with your key pair
+          --security-groups default \
+          --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=GitHubActionsEC2}]' \
+          --query 'Instances[0].InstanceId' \
+          --output text)
+
+        echo "EC2 instance created: $INSTANCE_ID"
+
+    - name: Get Public IP
+      run: |
+        PUBLIC_IP=$(aws ec2 describe-instances \
+          --filters "Name=tag:Name,Values=GitHubActionsEC2" \
+          --query "Reservations[*].Instances[*].PublicIpAddress" \
+          --output text)
+        echo "Public IP: $PUBLIC_IP"
